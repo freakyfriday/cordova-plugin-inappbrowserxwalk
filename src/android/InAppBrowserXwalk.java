@@ -13,9 +13,8 @@ import org.json.JSONException;
 
 import org.xwalk.core.XWalkView;
 import org.xwalk.core.XWalkResourceClient;
-import org.xwalk.core.internal.XWalkViewInternal;
-import org.xwalk.core.internal.XWalkCookieManager;
-
+import org.xwalk.core.XWalkCookieManager;
+import org.xwalk.core.internal.XWalkClient;
 import android.view.View;
 import android.view.Window;
 import android.view.ViewGroup.LayoutParams;
@@ -25,6 +24,13 @@ import android.widget.TextView;
 import android.graphics.Typeface;
 import android.widget.Toast;
 
+import android.webkit.WebResourceResponse;
+import org.crosswalk.engine.XWalkCordovaView;
+import android.util.Log;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
+import android.net.http.SslError;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceResponse;
 
 public class InAppBrowserXwalk extends CordovaPlugin {
@@ -84,6 +90,44 @@ public class InAppBrowserXwalk extends CordovaPlugin {
                    callbackContext.sendPluginResult(result);
                } catch (JSONException ex) {}
            }
+            @Override
+            public boolean shouldOverrideUrlLoading(XWalkView view, String url) {
+                if(url.equalsIgnoreCase("membery://index")) {
+                    Log.d("DEBUG", url);
+                    closeBrowser();
+                    return true;
+                } else {
+                    return false;
+                }
+        
+            }
+            /**
+    * Notify the host application that an SSL error occurred while loading a
+    * resource. The host application must call either callback.onReceiveValue(true)
+    * or callback.onReceiveValue(false). Note that the decision may be
+    * retained for use in response to future SSL errors. The default behavior
+    * is to pop up a dialog.
+    */
+    @Override
+    public void onReceivedSslError(XWalkView view, ValueCallback<Boolean> callback, SslError error) {
+        final String packageName = cordova.getActivity().getPackageName();
+        final PackageManager pm = cordova.getActivity().getPackageManager();
+
+        ApplicationInfo appInfo;
+        try {
+            appInfo = pm.getApplicationInfo(packageName, PackageManager.GET_META_DATA);
+            if ((appInfo.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0) {
+                // debug = true
+                callback.onReceiveValue(true);
+            } else {
+                // debug = false
+                callback.onReceiveValue(false);
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            // When it doubt, lock it out!
+            callback.onReceiveValue(false);
+        }
+    }
    }
 
     private void openBrowser(final JSONArray data) throws JSONException {
@@ -99,9 +143,9 @@ public class InAppBrowserXwalk extends CordovaPlugin {
                 xWalkWebView.setResourceClient(new MyResourceClient(xWalkWebView));
                 xWalkWebView.load(url, "");
 
-                String toolbarColor = "#FFFFFF";
+                String toolbarColor = "#FFCE0D";
                 int toolbarHeight = 80;
-                String closeButtonText = "< Close";
+                String closeButtonText = "(X) Close";
                 int closeButtonSize = 25;
                 String closeButtonColor = "#000000";
                 boolean openHidden = false;
@@ -154,8 +198,7 @@ public class InAppBrowserXwalk extends CordovaPlugin {
                          closeBrowser();
                      }
                  });
-
-                main.addView(toolbar);
+                //main.addView(toolbar);
                 main.addView(xWalkWebView);
 
                 dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
