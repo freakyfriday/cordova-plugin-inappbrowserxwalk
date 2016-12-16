@@ -60,10 +60,9 @@ public class InAppBrowserXwalk extends CordovaPlugin {
         }
 
         // Adding executeScript
-        if (action.equals("executeScript")) {
+        if(action.equals("executeScript")) {
             this.injectJS(data.getString(0));
         }
-
 
         return true;
     }
@@ -259,7 +258,7 @@ public class InAppBrowserXwalk extends CordovaPlugin {
         });
     }
 
-    public void injectJS(String source) {
+public void injectJS(String source) {
 
         final String finalScriptToInject = source;
         this.cordova.getActivity().runOnUiThread(new Runnable() {
@@ -285,3 +284,4 @@ public class InAppBrowserXwalk extends CordovaPlugin {
         });
     }
 
+}
