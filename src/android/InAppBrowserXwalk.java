@@ -60,9 +60,10 @@ public class InAppBrowserXwalk extends CordovaPlugin {
         }
 
         // Adding executeScript
-        if(action.equals("executeScript")) {
-            this.executeScript(data.getString(0));
+        if (action.equals("executeScript")) {
+            this.injectJS(data.getString(0));
         }
+
 
         return true;
     }
@@ -258,43 +259,8 @@ public class InAppBrowserXwalk extends CordovaPlugin {
         });
     }
 
-InAppBrowserXwalk.prototype = {
-    close: function () {
-        cordova.exec(null, null, "InAppBrowserXwalk", "close", []);
-    },
-    addEventListener: function (eventname, func) {
-        callbacks[eventname] = func;
-    },
-    removeEventListener: function (eventname) {
-        callbacks[eventname] = undefined;
-    },
-    show: function () {
-        cordova.exec(null, null, "InAppBrowserXwalk", "show", []);
-    },
-    hide: function () {
-        cordova.exec(null, null, "InAppBrowserXwalk", "hide", []);
-    },
+    public void injectJS(String source) {
 
-    executeScript: function(injectDetails) {
-        cordova.exec(null, null, "InAppBrowserXwalk", "injectScriptCode", [injectDetails]);
-    }
-}
-
-var callback = function(event) {
-    if (event.type === "loadstart" && callbacks['loadstart'] !== undefined) {
-        callbacks['loadstart'](event.url);
-    }
-    if (event.type === "loadstop" && callbacks['loadstop'] !== undefined) {
-        callbacks['loadstop'](event.url);
-    }
-    if (event.type === "exit" && callbacks['exit'] !== undefined) {
-        callbacks['exit']();
-    }
-    if (event.type === "jsCallback" && callbacks['jsCallback'] !== undefined) {
-        callbacks['jsCallback'](event.result);
-    }
-}
-    public void executeScript(injectDetails) {
         final String finalScriptToInject = source;
         this.cordova.getActivity().runOnUiThread(new Runnable() {
 
@@ -304,6 +270,7 @@ var callback = function(event) {
                 xWalkWebView.evaluateJavascript(finalScriptToInject, new ValueCallback<String>() {
                     @Override
                     public void onReceiveValue(String scriptResult) {
+
                         try {
                             JSONObject obj = new JSONObject();
                             obj.put("type", "jsCallback");
@@ -318,4 +285,3 @@ var callback = function(event) {
         });
     }
 
-}
