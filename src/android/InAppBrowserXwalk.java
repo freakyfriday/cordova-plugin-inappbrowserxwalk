@@ -59,6 +59,11 @@ public class InAppBrowserXwalk extends CordovaPlugin {
             this.hideBrowser();
         }
 
+        // Adding executeScript
+        if(action.equals("executeScript")) {
+            this.executeScript(data.getString(0));
+        }
+
         return true;
     }
 
@@ -90,7 +95,8 @@ public class InAppBrowserXwalk extends CordovaPlugin {
                    callbackContext.sendPluginResult(result);
                } catch (JSONException ex) {}
            }
-            @Override
+            // This is Membery specific. Hence, disabled.
+            /*@Override
             public boolean shouldOverrideUrlLoading(XWalkView view, String url) {
                 if(url.equalsIgnoreCase("membery://index")) {
                     Log.d("DEBUG", url);
@@ -100,7 +106,7 @@ public class InAppBrowserXwalk extends CordovaPlugin {
                     return false;
                 }
         
-            }
+            }*/
             /**
     * Notify the host application that an SSL error occurred while loading a
     * resource. The host application must call either callback.onReceiveValue(true)
@@ -251,4 +257,65 @@ public class InAppBrowserXwalk extends CordovaPlugin {
             }
         });
     }
+
+InAppBrowserXwalk.prototype = {
+    close: function () {
+        cordova.exec(null, null, "InAppBrowserXwalk", "close", []);
+    },
+    addEventListener: function (eventname, func) {
+        callbacks[eventname] = func;
+    },
+    removeEventListener: function (eventname) {
+        callbacks[eventname] = undefined;
+    },
+    show: function () {
+        cordova.exec(null, null, "InAppBrowserXwalk", "show", []);
+    },
+    hide: function () {
+        cordova.exec(null, null, "InAppBrowserXwalk", "hide", []);
+    },
+
+    executeScript: function(injectDetails) {
+        cordova.exec(null, null, "InAppBrowserXwalk", "injectScriptCode", [injectDetails]);
+    }
+}
+
+var callback = function(event) {
+    if (event.type === "loadstart" && callbacks['loadstart'] !== undefined) {
+        callbacks['loadstart'](event.url);
+    }
+    if (event.type === "loadstop" && callbacks['loadstop'] !== undefined) {
+        callbacks['loadstop'](event.url);
+    }
+    if (event.type === "exit" && callbacks['exit'] !== undefined) {
+        callbacks['exit']();
+    }
+    if (event.type === "jsCallback" && callbacks['jsCallback'] !== undefined) {
+        callbacks['jsCallback'](event.result);
+    }
+}
+    public void executeScript(injectDetails) {
+        final String finalScriptToInject = source;
+        this.cordova.getActivity().runOnUiThread(new Runnable() {
+
+            @Override
+            public void run() {
+
+                xWalkWebView.evaluateJavascript(finalScriptToInject, new ValueCallback<String>() {
+                    @Override
+                    public void onReceiveValue(String scriptResult) {
+                        try {
+                            JSONObject obj = new JSONObject();
+                            obj.put("type", "jsCallback");
+                            obj.put("result", scriptResult);
+                            PluginResult result = new PluginResult(PluginResult.Status.OK, obj);
+                            result.setKeepCallback(true);
+                            callbackContext.sendPluginResult(result);
+                        } catch (JSONException ex) {}
+                    }
+                });
+            }
+        });
+    }
+
 }
